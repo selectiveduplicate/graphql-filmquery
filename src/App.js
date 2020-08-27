@@ -6,11 +6,12 @@ import {
   useQuery,
   gql
 } from "@apollo/client";
-import { Container } from "@material-ui/core";
+import Container  from "@material-ui/core/Container";
 import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import Input from '@material-ui/core/Input';
 import Button from '@material-ui/core/Button';
+import MaterialTable from 'material-table';
 
 import Header from './Components/Header';
 
@@ -41,14 +42,7 @@ const QUERY_FIND_FILMS = gql`
     }
   }`;
 
-// this is for trying to get the genre that the user selected
-// maybe this could be called inside another event handler or something...
-var handleGenreSelect = (event) => {
-  var genreValue = event.target.value;
-  return genreValue;
-};
-
-function GenreAndSearch() {
+function GenreAndSearch({handleGenreSelect}) {
 
   let { loading, error, data } = useQuery(QUERY_FILM_GENRES);
   
@@ -72,7 +66,7 @@ function GenreAndSearch() {
     <Autocomplete 
       id="film-box" 
       options={ filmGenres } 
-      onChange={ handleGenreSelect }
+      onChange={ (event, selectedGenre) => handleGenreSelect(event, selectedGenre) }
       style={{ width: 300 }} 
       getOptionLabel={(option) => option}
       renderInput={
@@ -84,49 +78,13 @@ function GenreAndSearch() {
 };
 
 // search and submit component
-function UserInput() {
-  const [ nameFilter, setNameFilter ] = useState("happy");
-  const [ genreFilter, setGenreFilter ] = useState({name: { eq: null}});
-
-  // send query with variables as per user provided
-  const { loading, error, data, refetch } = useQuery(QUERY_FIND_FILMS, 
-    { variables: {name: nameFilter, genre: genreFilter} });
-
-  /*
-  if (loading) {
-    return <h2>Loading...</h2>
-  } else if (error) {
-    console.log(error);
-    return <h2>Error!</h2>
-  }
-  */
-
-  // event handlers
-  const handleInputChange = (event) => {
-    setNameFilter(event.target.value);
-  };
-  
-  const handleGenre = () => {
-    setGenreFilter({name: { eq: handleGenreSelect()}});
-  };
-
-  const handleSubmit = (event) => {
-    refetch({ 
-      variables: {name: nameFilter, genre: genreFilter} 
-    })
-
-    var arrayOfFilmNames = [];
-    var arrayOfFilmDirectors = [];
-
-    data.queryFilm.forEach((filmObject) => arrayOfFilmNames.push(filmObject.name));
-    console.log(arrayOfFilmNames);
-  };
+function UserInput({handleInputChange, handleSubmit}) {
 
   return (
     <form>
       <Input placeholder="Film name" onChange={ handleInputChange }>
       </Input>
-      <Button variant="contained" onClick={ handleSubmit } color="primary" style={{ marginLeft: 20 }}>
+      <Button type="button" variant="contained" onClick={ handleSubmit } color="primary" style={{ marginLeft: 20 }}>
         Submit
       </Button>
     </form>
@@ -135,25 +93,119 @@ function UserInput() {
 };
 
 function App() {
+
+  const [ nameFilter, setNameFilter ] = useState("happy");
+  const [ genreFilter, setGenreFilter ] = useState({name: { eq: null}});
+
+  // variable with data for table
+  var filmsAndDirectors;
+  
+  // event handlers
+  const handleGenreSelect = (event, selectedGenre) => {
+    event.preventDefault();
+    if(selectedGenre) {
+      setGenreFilter({name: { eq: selectedGenre }})
+      console.log(selectedGenre);
+    } else {
+      console.log(selectedGenre);
+      setGenreFilter(null)
+    }
+  };
+
+  const handleInputChange = (event) => {
+    setNameFilter(event.target.value);
+  };
+
+  // send query with variables as per user provided
+  const { loading, error, data, refetch } = useQuery(QUERY_FIND_FILMS, 
+    { variables: {name: nameFilter, genre: genreFilter} });
+  
+  // event handlers
+  const handleSubmit = (event) => {
+    //event.preventDefault();
+    refetch({ 
+      variables: {name: nameFilter, genre: genreFilter} 
+    });
+
+    if (loading) {
+      return <h2>Loading...</h2>
+    } else if (error) {
+      return <h2>Error!</h2>
+    }
+    
+    //window.setTimeout(handleData(), 3000);
+    
+    
+    var arrayOfFilmNames = [];
+    var arrayOfFilmDirectors = [];
+    
+    // get film names
+    data.queryFilm.forEach((filmObject) => arrayOfFilmNames.push(filmObject.name));
+    console.log(arrayOfFilmNames);
+
+    // get corresponding directors
+    data.queryFilm.forEach((filmObject) => {
+      if (filmObject.directed_by.length > 1) {
+        arrayOfFilmDirectors.push(filmObject.directed_by[0].name);
+      } else {
+        filmObject.directed_by.forEach((dirObject) => arrayOfFilmDirectors.push(dirObject.name))
+      }
+    });
+    console.log(arrayOfFilmDirectors);
+
+    // create array of objects of film and their directors
+    filmsAndDirectors = [];
+    var tempObj = {};
+    arrayOfFilmNames.forEach((key, i) => {
+      tempObj.name = key;
+      tempObj.director = arrayOfFilmDirectors[i];
+      filmsAndDirectors.push(tempObj);
+      tempObj = {};
+    });
+    console.log(filmsAndDirectors);
+  };
+
+
   return (
-    <ApolloProvider client={APOLLO_CLIENT}>
-      <div>
-        <Header />
+    <div>
+
+      <Header />
+      <br></br>
+      <Container maxWidth="xs" style={ getContainerStyle }>
+
+        <GenreAndSearch handleGenreSelect={handleGenreSelect} />
         <br></br>
-        <Container maxWidth="sm" style={ getContainerStyle }>
-          <GenreAndSearch />
-          <br></br>
-          <h3 style={{ marginTop: 50 }}>
-            Enter a film name or phrase:
-          </h3>
-          <UserInput />
-        </Container>
-      </div>
-    </ApolloProvider>
+
+        <h3 style={{ marginTop: 50 }}>
+          Enter a film name or phrase:
+        </h3>
+
+        <UserInput handleInputChange={handleInputChange} handleSubmit={handleSubmit} />
+
+      </Container>
+      <MaterialTable 
+          title=""
+          columns={[
+            { title: 'Name', field: 'name', align: 'center', headerStyle: {
+              backgroundColor: '#A5B2FC'
+            } },
+            { title: 'Director', field: 'director', align: 'center', headerStyle: {
+              backgroundColor: '#A5B2FC'
+            } }
+          ]}
+          data={
+            filmsAndDirectors
+          }
+          options={{
+            search: true
+          }}
+          style={{ margin: '5rem' }}>
+      </MaterialTable>
+    </div>
   );
 }
 
-export default App;
+export { App, APOLLO_CLIENT };
 
 const getContainerStyle = {
   marginTop: '5rem'
