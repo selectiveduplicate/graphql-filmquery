@@ -2,16 +2,20 @@ import React, { useState } from "react";
 import {
   ApolloClient,
   InMemoryCache,
-  ApolloProvider,
   useQuery,
   gql
 } from "@apollo/client";
 import Container  from "@material-ui/core/Container";
 import TextField from '@material-ui/core/TextField';
-import Autocomplete from '@material-ui/lab/Autocomplete';
+import {
+  Autocomplete,
+  Alert,
+  AlertTitle
+} from '@material-ui/lab';
 import Input from '@material-ui/core/Input';
 import Button from '@material-ui/core/Button';
 import MaterialTable from 'material-table';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import Header from './Components/Header';
 
@@ -29,8 +33,8 @@ const QUERY_FILM_GENRES = gql`{
 }`;
 
 const QUERY_FIND_FILMS = gql`
-  query($name: String!, $genre: GenreFilter) {
-    queryFilm(filter:{name: {alloftext: $name}}) @cascade {
+  query($name: FilmFilter, $genre: GenreFilter) {
+    queryFilm(filter: $name) @cascade {
       name
       genre(filter: $genre) {
         name
@@ -40,16 +44,21 @@ const QUERY_FIND_FILMS = gql`
       }
       initial_release_date
     }
-  }`;
+}`;
 
 function GenreAndSearch({handleGenreSelect}) {
 
   let { loading, error, data } = useQuery(QUERY_FILM_GENRES);
   
   if (loading) {
-      return <h2>Loading...</h2>
+      return <CircularProgress />
   } else if (error) {
-      return <h2>Error!</h2>
+      return (
+        <Alert severity="error">
+          <AlertTitle>Error</AlertTitle>
+          Sorry, something might not be working at the moment!
+        </Alert>
+      )
   }
 
   // populate the array with film genres
@@ -84,7 +93,7 @@ function UserInput({handleInputChange, handleSubmit}) {
     <form>
       <Input placeholder="Film name" onChange={ handleInputChange }>
       </Input>
-      <Button type="button" variant="contained" onClick={ handleSubmit } color="primary" style={{ marginLeft: 20 }}>
+      <Button type="submit" variant="contained" onClick={ handleSubmit } color="primary" style={{ marginLeft: 20 }}>
         Submit
       </Button>
     </form>
@@ -94,26 +103,30 @@ function UserInput({handleInputChange, handleSubmit}) {
 
 function App() {
 
-  const [ nameFilter, setNameFilter ] = useState("happy");
-  const [ genreFilter, setGenreFilter ] = useState({name: { eq: null}});
+  const [ nameFilter, setNameFilter ] = useState({name: {alloftext: "Summer"}});
+  const [ genreFilter, setGenreFilter ] = useState(null);
+  const [ dataForRender, setDataForRender ] = useState([]);
 
   // variable with data for table
   var filmsAndDirectors;
+  var arrayOfFilmNames = [];
+  var arrayOfFilmDirectors = [];
   
   // event handlers
   const handleGenreSelect = (event, selectedGenre) => {
-    event.preventDefault();
     if(selectedGenre) {
-      setGenreFilter({name: { eq: selectedGenre }})
-      console.log(selectedGenre);
+      setGenreFilter({name: { eq: selectedGenre }});
     } else {
-      console.log(selectedGenre);
-      setGenreFilter(null)
+      setGenreFilter(null);
     }
   };
 
   const handleInputChange = (event) => {
-    setNameFilter(event.target.value);
+    if (event.target.value) {
+      setNameFilter({name: {alloftext: event.target.value}});
+    } else {
+      setNameFilter(null);
+    }
   };
 
   // send query with variables as per user provided
@@ -122,7 +135,7 @@ function App() {
   
   // event handlers
   const handleSubmit = (event) => {
-    //event.preventDefault();
+    event.preventDefault();
     refetch({ 
       variables: {name: nameFilter, genre: genreFilter} 
     });
@@ -132,13 +145,7 @@ function App() {
     } else if (error) {
       return <h2>Error!</h2>
     }
-    
-    //window.setTimeout(handleData(), 3000);
-    
-    
-    var arrayOfFilmNames = [];
-    var arrayOfFilmDirectors = [];
-    
+
     // get film names
     data.queryFilm.forEach((filmObject) => arrayOfFilmNames.push(filmObject.name));
     console.log(arrayOfFilmNames);
@@ -162,6 +169,7 @@ function App() {
       filmsAndDirectors.push(tempObj);
       tempObj = {};
     });
+    setDataForRender(filmsAndDirectors);
     console.log(filmsAndDirectors);
   };
 
@@ -194,7 +202,7 @@ function App() {
             } }
           ]}
           data={
-            filmsAndDirectors
+            dataForRender
           }
           options={{
             search: true

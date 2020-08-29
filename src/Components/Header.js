@@ -6,7 +6,7 @@ function Header() {
     return (
         <AppBar position="static">
           <Toolbar>
-            <h2>Film information</h2>
+            <h2>Film Information</h2>
           </Toolbar>
         </AppBar>
     )
