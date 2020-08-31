@@ -22,7 +22,19 @@ import Header from './Components/Header';
 
 const APOLLO_CLIENT = new ApolloClient({
   uri: "https://play.dgraph.io/graphql",
-  cache: new InMemoryCache()
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          queryFilm: {
+            merge(_ignored, incoming) {
+              return incoming;
+            },
+          },
+        },
+      },
+    },
+  })
 });
 
 // our queries
@@ -107,10 +119,15 @@ function App() {
   const [ genreFilter, setGenreFilter ] = useState(null);
   const [ dataForRender, setDataForRender ] = useState([]);
 
+  // send query with variables as per user provided
+  const { loading, error, data, refetch } = useQuery(QUERY_FIND_FILMS, 
+    { variables: {name: nameFilter, genre: genreFilter} });
+
   // variable with data for table
   var filmsAndDirectors;
   var arrayOfFilmNames = [];
   var arrayOfFilmDirectors = [];
+  var multipleDirectors = "";
   
   // event handlers
   const handleGenreSelect = (event, selectedGenre) => {
@@ -129,36 +146,38 @@ function App() {
     }
   };
 
-  // send query with variables as per user provided
-  const { loading, error, data, refetch } = useQuery(QUERY_FIND_FILMS, 
-    { variables: {name: nameFilter, genre: genreFilter} });
+  
   
   // event handlers
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    refetch({ 
+    const { data: newData } = await refetch({ 
       variables: {name: nameFilter, genre: genreFilter} 
     });
 
-    if (loading) {
+    /* if (loading) {
       return <h2>Loading...</h2>
     } else if (error) {
       return <h2>Error!</h2>
-    }
+    } */
 
     // get film names
-    data.queryFilm.forEach((filmObject) => arrayOfFilmNames.push(filmObject.name));
-    console.log(arrayOfFilmNames);
+    newData.queryFilm.forEach((filmObject) => arrayOfFilmNames.push(filmObject.name));
 
     // get corresponding directors
-    data.queryFilm.forEach((filmObject) => {
+    newData.queryFilm.forEach((filmObject) => {
+      // for multiple directors show in comma-separated list
       if (filmObject.directed_by.length > 1) {
-        arrayOfFilmDirectors.push(filmObject.directed_by[0].name);
+        filmObject.directed_by.forEach((dirObject) => {
+          multipleDirectors += dirObject.name + ", ";
+        })
+        arrayOfFilmDirectors.push(
+          multipleDirectors.trim().substr(0, multipleDirectors.length - 2));
+        multipleDirectors = "";
       } else {
         filmObject.directed_by.forEach((dirObject) => arrayOfFilmDirectors.push(dirObject.name))
       }
     });
-    console.log(arrayOfFilmDirectors);
 
     // create array of objects of film and their directors
     filmsAndDirectors = [];
@@ -170,7 +189,6 @@ function App() {
       tempObj = {};
     });
     setDataForRender(filmsAndDirectors);
-    console.log(filmsAndDirectors);
   };
 
 
