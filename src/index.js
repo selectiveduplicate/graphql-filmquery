@@ -1,8 +1,29 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { App, APOLLO_CLIENT } from './App';
+import App from './App';
+import { 
+  ApolloClient, 
+  ApolloProvider,
+  InMemoryCache 
+} from '@apollo/client';
 import './index.css';
-import { ApolloProvider } from '@apollo/client';
+
+const APOLLO_CLIENT = new ApolloClient({
+  uri: "https://play.dgraph.io/graphql",
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          queryFilm: {
+            merge(_ignored, incoming) {
+              return incoming;
+            },
+          },
+        },
+      },
+    },
+  })
+});
 
 ReactDOM.render(
   <React.StrictMode>

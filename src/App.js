@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import {
-  ApolloClient,
-  InMemoryCache,
   useQuery,
   gql
 } from "@apollo/client";
@@ -18,24 +16,6 @@ import MaterialTable from 'material-table';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 import Header from './Components/Header';
-
-
-const APOLLO_CLIENT = new ApolloClient({
-  uri: "https://play.dgraph.io/graphql",
-  cache: new InMemoryCache({
-    typePolicies: {
-      Query: {
-        fields: {
-          queryFilm: {
-            merge(_ignored, incoming) {
-              return incoming;
-            },
-          },
-        },
-      },
-    },
-  })
-});
 
 // our queries
 const QUERY_FILM_GENRES = gql`{
@@ -231,7 +211,7 @@ function App() {
   );
 }
 
-export { App, APOLLO_CLIENT };
+export default App;
 
 const getContainerStyle = {
   marginTop: '5rem'
