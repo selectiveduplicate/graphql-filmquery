@@ -38,7 +38,7 @@ const QUERY_FIND_FILMS = gql`
     }
 }`;
 
-function GenreAndSearch({handleGenreSelect}) {
+function Genre({handleGenreSelect}) {
 
   let { loading, error, data } = useQuery(QUERY_FILM_GENRES);
   
@@ -135,12 +135,6 @@ function App() {
       variables: {name: nameFilter, genre: genreFilter} 
     });
 
-    /* if (loading) {
-      return <h2>Loading...</h2>
-    } else if (error) {
-      return <h2>Error!</h2>
-    } */
-
     // get film names
     newData.queryFilm.forEach((filmObject) => arrayOfFilmNames.push(filmObject.name));
 
@@ -179,7 +173,7 @@ function App() {
       <br></br>
       <Container maxWidth="xs" style={ getContainerStyle }>
 
-        <GenreAndSearch handleGenreSelect={handleGenreSelect} />
+        <Genre handleGenreSelect={handleGenreSelect} />
         <br></br>
 
         <h3 style={{ marginTop: 50 }}>
