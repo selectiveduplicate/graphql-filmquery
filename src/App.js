@@ -19,7 +19,7 @@ import Header from './Components/Header';
 
 // our queries
 const QUERY_FILM_GENRES = gql`{
-  queryGenre {
+  queryGenre @cascade{
     name
   }
 }`;
@@ -57,11 +57,6 @@ function Genre({handleGenreSelect}) {
   var filmGenres = [];
   data.queryGenre.forEach(
     (genreObject) => filmGenres.push(genreObject.name));
-  
-  // filter out the null values
-  filmGenres = filmGenres.filter(function(genre) { 
-    return genre !== null; 
-  });
     
   return (
     <Autocomplete 
@@ -78,7 +73,6 @@ function Genre({handleGenreSelect}) {
 
 };
 
-// search and submit component
 function UserInput({handleInputChange, handleSubmit}) {
 
   return (
