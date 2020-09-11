@@ -4,25 +4,11 @@ import {
   gql
 } from "@apollo/client";
 import Container  from "@material-ui/core/Container";
-import TextField from '@material-ui/core/TextField';
-import {
-  Autocomplete,
-  Alert,
-  AlertTitle
-} from '@material-ui/lab';
-import Input from '@material-ui/core/Input';
-import Button from '@material-ui/core/Button';
 import MaterialTable from 'material-table';
-import CircularProgress from '@material-ui/core/CircularProgress';
 
 import Header from './Components/Header';
-
-// our queries
-const QUERY_FILM_GENRES = gql`{
-  queryGenre @cascade{
-    name
-  }
-}`;
+import Genre from './Components/Genre';
+import UserInput from './Components/UserInput';
 
 const QUERY_FIND_FILMS = gql`
   query($name: FilmFilter, $genre: GenreFilter) {
@@ -38,53 +24,8 @@ const QUERY_FIND_FILMS = gql`
     }
 }`;
 
-function Genre({handleGenreSelect}) {
-
-  let { loading, error, data } = useQuery(QUERY_FILM_GENRES);
-  
-  if (loading) {
-      return <CircularProgress />
-  } else if (error) {
-      return (
-        <Alert severity="error">
-          <AlertTitle>Error</AlertTitle>
-          Sorry, something might not be working at the moment!
-        </Alert>
-      )
-  }
-
-  // populate the array with film genres
-  var filmGenres = [];
-  data.queryGenre.forEach(
-    (genreObject) => filmGenres.push(genreObject.name));
-    
-  return (
-    <Autocomplete 
-      id="film-box" 
-      options={ filmGenres } 
-      onChange={ (event, selectedGenre) => handleGenreSelect(event, selectedGenre) }
-      style={{ width: 300 }} 
-      getOptionLabel={(option) => option}
-      renderInput={
-        (params) => <TextField {...params} label="Select genre" variant="outlined" />
-      }>
-    </Autocomplete>
-  );
-
-};
-
-function UserInput({handleInputChange, handleSubmit}) {
-
-  return (
-    <form>
-      <Input placeholder="Film name" onChange={ handleInputChange }>
-      </Input>
-      <Button type="submit" variant="contained" onClick={ handleSubmit } color="primary" style={{ marginLeft: 20 }}>
-        Submit
-      </Button>
-    </form>
-  );
-
+const getContainerStyle = {
+  marginTop: '5rem'
 };
 
 function App() {
@@ -200,7 +141,3 @@ function App() {
 }
 
 export default App;
-
-const getContainerStyle = {
-  marginTop: '5rem'
-};
